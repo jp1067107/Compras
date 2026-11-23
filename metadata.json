@@ -1,0 +1,6 @@
+{
+  "name": "Somma",
+  "description": "Sistema minimalista e premium para organizar e somar produtos em tempo real durante compras, com controle de orçamento e histórico.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Somma — Calculadora de Compras em Tempo Real</title>
+    <meta
+      name="description"
+      content="Sistema minimalista e premium para organizar e somar produtos em tempo real durante compras, com controle de orçamento e histórico."
+    />
+    <meta property="og:title" content="Somma — Calculadora de Compras em Tempo Real" />
+    <meta
+      property="og:description"
+      content="Organize e some produtos em tempo real enquanto faz compras, com controle de orçamento e histórico salvo no aparelho."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('somma_theme_v1');
+          if (saved === 'light') {
+            document.documentElement.classList.remove('dark');
+          } else {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="bg-[var(--bg-canvas)] text-[var(--text-primary)] antialiased selection:bg-blue-500/25 selection:text-blue-600 dark:selection:text-blue-200">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

@@ -35,6 +35,14 @@
     <style>
       html { background-color: #F4F7FC; color: #0F172A; }
       html.dark { background-color: #0E1116; color: #F3F6FA; }
+      #somma-boot-fallback {
+        display: none;
+        min-height: 100vh;
+        padding: 24px;
+        align-items: center;
+        justify-content: center;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
     </style>
 
     <script>
@@ -50,11 +58,97 @@
             if (metaTheme) metaTheme.setAttribute('content', '#0E1116');
           }
         } catch (e) {}
+
+        var bootErrors = [];
+        window.__SOMMA_MOUNTED__ = false;
+
+        function showBootFallback(reason) {
+          if (window.__SOMMA_MOUNTED__) return;
+          var root = document.getElementById('root');
+          if (root && root.children.length > 0) return;
+          var box = document.getElementById('somma-boot-fallback');
+          var msg = document.getElementById('somma-boot-msg');
+          if (!box || !msg) return;
+
+          var hasRawTsx = !!document.querySelector('script[src*="/src/main.tsx"]');
+          var isLocal =
+            location.hostname === 'localhost' ||
+            location.hostname === '127.0.0.1' ||
+            location.hostname.indexOf('run.app') !== -1;
+
+          if (hasRawTsx && !isLocal) {
+            msg.innerHTML =
+              'Este site foi publicado com o código-fonte sem compilar. No <strong>Cloudflare Pages</strong>, acesse <em>Settings &rarr; Builds &amp; deployments</em> e configure:<br/><br/>' +
+              '<strong>Build command:</strong> <code>npm run build</code><br/>' +
+              '<strong>Build output directory:</strong> <code>dist</code>';
+          } else {
+            msg.textContent =
+              reason ||
+              (bootErrors.length
+                ? 'Erro ao iniciar: ' + bootErrors[0]
+                : 'O aplicativo demorou para iniciar. Tente limpar o cache e recarregar.');
+          }
+          box.style.display = 'flex';
+        }
+
+        window.addEventListener('error', function (e) {
+          if (window.__SOMMA_MOUNTED__) return;
+          var text = e && e.message ? e.message : 'Falha ao carregar um script do aplicativo.';
+          bootErrors.push(text);
+          showBootFallback(text);
+        });
+
+        window.addEventListener('unhandledrejection', function (e) {
+          if (window.__SOMMA_MOUNTED__) return;
+          var text =
+            e && e.reason && e.reason.message
+              ? e.reason.message
+              : 'Falha ao inicializar os recursos do aplicativo.';
+          bootErrors.push(text);
+          showBootFallback(text);
+        });
+
+        window.__SOMMA_HARD_RELOAD__ = function () {
+          try {
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function (regs) {
+                for (var i = 0; i < regs.length; i++) regs[i].unregister();
+              });
+            }
+            if ('caches' in window) {
+              caches.keys().then(function (keys) {
+                for (var i = 0; i < keys.length; i++) caches.delete(keys[i]);
+              });
+            }
+          } catch (e) {}
+          setTimeout(function () {
+            location.reload();
+          }, 250);
+        };
+
+        setTimeout(function () {
+          showBootFallback();
+        }, 4500);
       })();
     </script>
   </head>
   <body class="bg-[var(--bg-canvas)] text-[var(--text-primary)] antialiased selection:bg-blue-500/25 selection:text-blue-600 dark:selection:text-blue-200">
     <div id="root"></div>
+
+    <div id="somma-boot-fallback" role="alert">
+      <div style="max-width: 440px; width: 100%; padding: 24px; border-radius: 16px; border: 1px solid #252D3A; background: #151921; color: #F3F6FA;">
+        <h1 style="margin: 0 0 8px; font-size: 18px; font-weight: 700;">Somma não pôde ser carregado</h1>
+        <p id="somma-boot-msg" style="margin: 0 0 16px; font-size: 14px; line-height: 1.5; color: #A1AEBE;"></p>
+        <button
+          type="button"
+          onclick="window.__SOMMA_HARD_RELOAD__()"
+          style="padding: 10px 16px; border: 0; border-radius: 10px; background: #2563EB; color: #FFFFFF; font-size: 14px; font-weight: 600; cursor: pointer;"
+        >
+          Limpar cache e recarregar
+        </button>
+      </div>
+    </div>
+
     <noscript>
       <div style="padding: 2rem; font-family: system-ui, sans-serif; text-align: center;">
         O Somma precisa de JavaScript ativado para calcular suas compras em tempo real.

@@ -3,6 +3,8 @@ import { AlertCircle, AlertTriangle, Check, Pencil } from 'lucide-react';
 import { Header } from './components/Header';
 import { HistoryView } from './components/HistoryView';
 import { ItemList } from './components/ItemList';
+import { OfflineIndicator } from './components/OfflineIndicator';
+import { PWAInstallButton } from './components/PWAInstallButton';
 import { QuickAddBar } from './components/QuickAddBar';
 import { SummaryPanel } from './components/SummaryPanel';
 import { Toast } from './components/Toast';
@@ -30,9 +32,11 @@ import {
   loadActiveDraft,
   loadHistory,
   loadTheme,
+  parseBackup,
   saveActiveDraft,
   saveHistory,
   saveTheme,
+  serializeBackup,
 } from './utils/storage';
 
 export default function App() {
@@ -47,13 +51,16 @@ export default function App() {
 
   const toastTimerRef = useRef<number | null>(null);
 
-  // Sync theme to <html class="dark"> and localStorage
+  // Sync theme to <html class="dark">, mobile browser theme-color, and localStorage
   useEffect(() => {
     const root = document.documentElement;
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
     if (theme === 'dark') {
       root.classList.add('dark');
+      if (metaTheme) metaTheme.setAttribute('content', '#0E1116');
     } else {
       root.classList.remove('dark');
+      if (metaTheme) metaTheme.setAttribute('content', '#2563EB');
     }
     saveTheme(theme);
   }, [theme]);
@@ -369,6 +376,41 @@ export default function App() {
     showToast(target ? `"${target.title}" removida do histórico.` : 'Compra removida do histórico.');
   };
 
+  const handleExportBackup = () => {
+    try {
+      const json = serializeBackup(draft, history);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `somma-backup-${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Backup exportado com sucesso.');
+    } catch {
+      showToast('Não foi possível exportar o arquivo de backup.');
+    }
+  };
+
+  const handleImportBackup = (jsonText: string) => {
+    const restored = parseBackup(jsonText);
+    if (!restored) {
+      showToast('Arquivo de backup inválido.');
+      return;
+    }
+    setDraft(restored.draft);
+    setTitleInput(restored.draft.title);
+    setHistory(restored.history);
+    showToast(
+      `Backup restaurado (${restored.history.length} ${
+        restored.history.length === 1 ? 'compra' : 'compras'
+      } no histórico).`
+    );
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)]">
       <Header
@@ -378,6 +420,8 @@ export default function App() {
         theme={theme}
         onToggleTheme={handleToggleTheme}
       />
+
+      <OfflineIndicator />
 
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {activeTab === 'current' ? (
@@ -438,6 +482,12 @@ export default function App() {
                     </button>
                   </div>
                 )}
+              </div>
+
+              <div className="flex items-center shrink-0">
+                <PWAInstallButton
+                  onInstalled={() => showToast('Somma instalado no seu aparelho.')}
+                />
               </div>
             </div>
 
@@ -545,6 +595,8 @@ export default function App() {
             onDuplicateSavedList={handleDuplicateSavedList}
             onDeleteSavedList={handleDeleteSavedList}
             onGoToCurrent={() => setActiveTab('current')}
+            onExportBackup={handleExportBackup}
+            onImportBackup={handleImportBackup}
           />
         )}
       </main>

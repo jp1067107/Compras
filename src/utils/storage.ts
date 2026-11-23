@@ -151,3 +151,103 @@ export function saveHistory(history: SavedShoppingList[]): void {
     // Ignore quota/storage errors
   }
 }
+
+export interface BackupPayload {
+  version: number;
+  exportedAt: number;
+  draft: ActiveDraft;
+  history: SavedShoppingList[];
+}
+
+export function serializeBackup(draft: ActiveDraft, history: SavedShoppingList[]): string {
+  const payload: BackupPayload = {
+    version: 1,
+    exportedAt: Date.now(),
+    draft,
+    history,
+  };
+  return JSON.stringify(payload, null, 2);
+}
+
+export function parseBackup(jsonText: string): {
+  draft: ActiveDraft;
+  history: SavedShoppingList[];
+} | null {
+  try {
+    const parsed = JSON.parse(jsonText) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== 'object') return null;
+
+    const rawDraft = parsed.draft as Record<string, unknown> | undefined;
+    const draftItems =
+      rawDraft && Array.isArray(rawDraft.items)
+        ? rawDraft.items.map(sanitizeItem).filter((item): item is ShoppingItem => item !== null)
+        : [];
+    const draftBudget =
+      rawDraft &&
+      typeof rawDraft.budget === 'number' &&
+      Number.isFinite(rawDraft.budget) &&
+      rawDraft.budget > 0
+        ? rawDraft.budget
+        : null;
+
+    const draft: ActiveDraft = {
+      editingHistoryId:
+        rawDraft && typeof rawDraft.editingHistoryId === 'string'
+          ? rawDraft.editingHistoryId
+          : null,
+      title:
+        rawDraft && typeof rawDraft.title === 'string' && rawDraft.title.trim()
+          ? rawDraft.title
+          : getDefaultListTitle(),
+      budget: draftBudget,
+      items: draftItems,
+    };
+
+    const history: SavedShoppingList[] = [];
+    if (Array.isArray(parsed.history)) {
+      for (const entry of parsed.history) {
+        if (!entry || typeof entry !== 'object') continue;
+        const obj = entry as Record<string, unknown>;
+        if (typeof obj.id !== 'string' || !obj.id.trim()) continue;
+        const items = Array.isArray(obj.items)
+          ? obj.items.map(sanitizeItem).filter((item): item is ShoppingItem => item !== null)
+          : [];
+        const savedAt =
+          typeof obj.savedAt === 'number' && Number.isFinite(obj.savedAt)
+            ? obj.savedAt
+            : Date.now();
+        const updatedAt =
+          typeof obj.updatedAt === 'number' && Number.isFinite(obj.updatedAt)
+            ? obj.updatedAt
+            : savedAt;
+        const budget =
+          typeof obj.budget === 'number' && Number.isFinite(obj.budget) && obj.budget > 0
+            ? obj.budget
+            : null;
+
+        history.push({
+          id: obj.id,
+          title: typeof obj.title === 'string' && obj.title.trim() ? obj.title : 'Compra salva',
+          savedAt,
+          updatedAt,
+          budget,
+          items,
+          totalAmount: computeListTotal(items),
+          totalUnits: computeTotalUnits(items),
+        });
+      }
+    }
+
+    if (!rawDraft && !Array.isArray(parsed.history)) {
+      return null;
+    }
+
+    return {
+      draft,
+      history: history.sort((a, b) => b.updatedAt - a.updatedAt),
+    };
+  } catch {
+    return null;
+  }
+}
+

@@ -1,12 +1,14 @@
-import { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   ChevronDown,
   ChevronUp,
   Clock,
   Copy,
+  Download,
   Pencil,
   Search,
   Trash2,
+  Upload,
 } from 'lucide-react';
 import { CATEGORY_LABEL_MAP, SavedShoppingList } from '../types/shopping';
 import {
@@ -24,6 +26,8 @@ interface HistoryViewProps {
   onDuplicateSavedList: (list: SavedShoppingList) => void;
   onDeleteSavedList: (id: string) => void;
   onGoToCurrent: () => void;
+  onExportBackup: () => void;
+  onImportBackup: (jsonText: string) => void;
 }
 
 export function HistoryView({
@@ -33,10 +37,26 @@ export function HistoryView({
   onDuplicateSavedList,
   onDeleteSavedList,
   onGoToCurrent,
+  onExportBackup,
+  onImportBackup,
 }: HistoryViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        onImportBackup(reader.result);
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  };
 
   const stats = useMemo(() => {
     const cumulative = roundMoney(history.reduce((sum, entry) => sum + entry.totalAmount, 0));
@@ -69,13 +89,30 @@ export function HistoryView({
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
           Quando terminar de somar seus produtos, clique em <strong className="font-medium text-slate-700 dark:text-slate-200">Salvar no histórico</strong> para consultar valores antigos ou editar suas listas depois.
         </p>
-        <button
-          type="button"
-          onClick={onGoToCurrent}
-          className="mt-6 min-h-[44px] px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors cursor-pointer"
-        >
-          Voltar para compra atual
-        </button>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
+          <button
+            type="button"
+            onClick={onGoToCurrent}
+            className="min-h-[44px] px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors cursor-pointer"
+          >
+            Voltar para compra atual
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="min-h-[44px] px-4 py-2.5 rounded-xl border border-[#DCE6F5] dark:border-[#2A3342] text-slate-700 dark:text-slate-300 hover:bg-[#F4F7FC] dark:hover:bg-[#1E2532] text-sm font-medium inline-flex items-center gap-2 transition-colors cursor-pointer"
+          >
+            <Upload className="w-4 h-4" aria-hidden="true" />
+            Importar backup
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+        </div>
       </section>
     );
   }
@@ -313,6 +350,38 @@ export function HistoryView({
           })}
         </div>
       )}
+
+      {/* Local Data Backup Footer */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 rounded-2xl border border-[#DCE6F5] dark:border-[#252D3A] bg-white dark:bg-[#151921]">
+        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+          Seus dados ficam salvos automaticamente neste aparelho e funcionam offline. Exporte um arquivo de backup se quiser transferir para outro celular.
+        </p>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={onExportBackup}
+            className="min-h-[38px] px-3.5 py-1.5 rounded-lg border border-[#DCE6F5] dark:border-[#2A3342] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-[#F4F7FC] dark:hover:bg-[#1E2532] inline-flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" aria-hidden="true" />
+            Exportar backup
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="min-h-[38px] px-3.5 py-1.5 rounded-lg border border-[#DCE6F5] dark:border-[#2A3342] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-[#F4F7FC] dark:hover:bg-[#1E2532] inline-flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer"
+          >
+            <Upload className="w-3.5 h-3.5" aria-hidden="true" />
+            Importar
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+        </div>
+      </div>
     </div>
   );
 }

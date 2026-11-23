@@ -2,33 +2,52 @@
 <html lang="pt-BR" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Somma — Calculadora de Compras em Tempo Real</title>
     <meta
       name="description"
-      content="Sistema minimalista e premium para organizar e somar produtos em tempo real durante compras, com controle de orçamento e histórico."
+      content="Sistema minimalista e premium para organizar e somar produtos em tempo real durante compras, com controle de orçamento, histórico e modo offline."
     />
     <meta property="og:title" content="Somma — Calculadora de Compras em Tempo Real" />
     <meta
       property="og:description"
-      content="Organize e some produtos em tempo real enquanto faz compras, com controle de orçamento e histórico salvo no aparelho."
+      content="Organize e some produtos em tempo real enquanto faz compras, com controle de orçamento, histórico local e modo offline."
     />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- PWA & Mobile App Metadata -->
+    <meta name="theme-color" content="#0E1116" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Somma" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
+
+    <style>
+      html { background-color: #F4F7FC; color: #0F172A; }
+      html.dark { background-color: #0E1116; color: #F3F6FA; }
+    </style>
+
     <script>
       (function () {
         try {
           var saved = localStorage.getItem('somma_theme_v1');
+          var metaTheme = document.querySelector('meta[name="theme-color"]');
           if (saved === 'light') {
             document.documentElement.classList.remove('dark');
+            if (metaTheme) metaTheme.setAttribute('content', '#2563EB');
           } else {
             document.documentElement.classList.add('dark');
+            if (metaTheme) metaTheme.setAttribute('content', '#0E1116');
           }
         } catch (e) {}
       })();
@@ -36,7 +55,11 @@
   </head>
   <body class="bg-[var(--bg-canvas)] text-[var(--text-primary)] antialiased selection:bg-blue-500/25 selection:text-blue-600 dark:selection:text-blue-200">
     <div id="root"></div>
+    <noscript>
+      <div style="padding: 2rem; font-family: system-ui, sans-serif; text-align: center;">
+        O Somma precisa de JavaScript ativado para calcular suas compras em tempo real.
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-
